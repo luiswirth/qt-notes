@@ -29,11 +29,88 @@ $ exp(plus.minus i k x) = cos(k x) plus.minus i sin(k x) $
 Exponential basis diagonalizes translation/momentum. Basis for transport and Bloch's theorem. Current.
 SinCos basis diagonalizes reflection $x |-> -x$. cosine even (origin is antinode), sine odd (origin is node). just parity. each a standing wave. no current. basis for symmetric box.
 
+== QM for Atoms
+
+Many-Body Schrödinger Equation.
+
+Assume Born-Oppenheimer approximation: Ions are fixed in space.
+
+3N dim wavefunction. intractable.
+if no e-e interaction term, then separable into N single-electron hamiltonians.
+
+Kohn-Sham Density Functional Theory: Exists single-electron effective potential
+reproducing probability density of MBSE exactly. Existence, no construction.
+
+Crafting the effective potential:
+- DFT (wrong band gap)
+- Empirical Pseudo-Potential (needs reference)
+
+= Semiconductor Simulation Basics
+
+TCAD
+Technology Computer Aided Design.
+
+Silicon (IV) has big effective mass.
+III and V elements such as GaAs have low effective mass. Sooner quantum.
+
+== Classical Drift-Diffusion
+
+Collisions with other particles. lose momentum. mobility.
+Mean free path.
+
+Apt when device length much larger than mean free path. Allows for averaging.
+
+== Semiclassical Boltzmann Transport Equation
+
+Phase space distribution with continuity equation.
+Explicit handling of collisions.
+
+Apt when device length close to mean free path.
+
+== Quantum Schrödinger Equation
+
+Quantization/Confinement and Tunneling
+
+Apt when device length close to the de Broglie wavelength computed from the electron effective mass.
+
 = Crystal foundations
+
+== Bloch Theorem
+
+Periodic potential.
+Periodic probability density.
+Periodic wavefunction up to phase factor.
+
+$Psi(r) = exp(i k r) u(r)$, with $u$ periodic.
 
 == Brillouin zone
 
 Brillouin zone is $[-pi/a, +pi/a]$, because the period of $exp(i k a)$ in $k$ is $2 pi/a$.
+
+
+== Bandstructure
+
+Band structure $E(k)$ comes from dispersion relation $omega(k)$.
+
+Band edge $=$ extrema of $E(k)$
+
+multiple bands:
+- conduction band (electrons)
+- valence band (holes)
+
+direct band gap: jump between valence band edge and conduction band edge at same $k$.
+
+metals: no band gap. fermi level in bands
+semiconductor: small band gap. fermi level in the gap.
+insulator: big band gap. fermi level in the gap.
+what distinguishes them is the gap size, not where the fermi level sits. doping moves it toward a band.
+
+== Effective mass
+
+Taylor expand $E(k)$ around band edge (extremum).
+
+The linear term vanishes, since $dif E slash dif k = 0$ at an extremum.
+Only 2nd order term. parabola. like free particle.
 
 == Probability density and DoS
 
@@ -254,6 +331,20 @@ this is what the Schrödinger-Poisson loop does.
 
 = Green's function formalism
 
+== Basics
+
+PDE $L u = f$
+
+Green's function.
+$ L_x G(x, y) = delta(x - y) $
+
+Superposition
+$ u(x) = integral G(x, y) f(y) dif y $
+
+2nd order PDE
+gives continuous Green function with jump in derivative. $C^0$.
+jump in derivative gives dirac in 2nd derivative.
+
 == Retarded and advanced
 
 $ G^R = (E - H - Sigma^R)^(-1) $
@@ -336,6 +427,38 @@ transmission $T(E) = tr(Gamma_L G^R Gamma_R G^A)$
 how does left and right interact. transmission between left and right.
 
 Landauer gives $I = (2 q)/h integral dif E space T(E) (f_L - f_R)$
+
+== Algorithm
+
+Inverting $(E - H - Sigma^R)$ in a self-consistency loop for every $E$ and every bias is too expensive. $O(N^3)$
+
+We only need diagonal $G^R_(i,i)$ for probability and corner $G^R_(1,N)$ for transmission.
+So $N+1$ numbers instead of $N^2$.
+
+$H$ is tridiagonal. 2nd derivative only gives coupling to direct neighbors. $Sigma^R$ touches only ends.
+Chain structure. The device is a chain of sites.
+We build the device one site at a time. Update site-by-site. Small local operation. No global inversion.
+Build from left to right. at site $i$ you know green's function of everything to the left. Sweep back right to left. Both combined give full diagonal.
+Two sweeps, each $O(N)$ steps. Total $O(N)$ instead of $O(N^3)$.
+With blocks of size $M$ instead of scalars the cost is $O(N M^3)$.
+The single site step, is like a contact incorporation. it gives a self-energy. Schur complement style.
+
+We drop the $R$ superscript
+
+Forward sweep. Define $g_n$ as Green's function until site $n$ of subchain $1,dots,n$.
+We initialize $g_1 = (E - H_(1 1) - Sigma_L)^(-1)$.
+Each step attach one site $g_n = (E - H_(n n) - H_(n,n-1) g_(n-1) H_(n-1,n))^(-1)$.
+The sandwich being called $Sigma_("left", n)$
+
+At the right end, you additionally need to subtract $Sigma_R$.
+This is the first exact term. and we have $g_(N N) = G_(N N)$.
+
+Now we need to make all steps exact, by propagating the right contribution through the chain.
+Backward sweep.
+$G_(n n) = g_n + g_n H_(n, n+1) G_(n+1,n+1) H_(n+1,n) g_n$
+
+and the off-diagonal we get as
+$G_(n+1,n) = -G_(n+1,n+1) H_(n+1,n) g_n$
 
 = TODO
 
