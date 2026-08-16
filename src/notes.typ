@@ -43,7 +43,21 @@ reproducing probability density of MBSE exactly. Existence, no construction.
 
 Crafting the effective potential:
 - DFT (wrong band gap)
-- Empirical Pseudo-Potential (needs reference)
+- Empirical (needs reference): Tight-Binding and Pseudo-Potential
+
+
+== Occupations
+
+Fermions follow Fermi statistics
+$
+  f(E, E_F) = 1/(exp((E - E_F)/(k_B T)) + 1) in [0, 1]
+$
+
+Bosons follow Bose-Einstein statistics
+$
+  N(E) = 1/(exp(E/(k_B T)) - 1) in [0, oo)
+$
+applies to phonons. $E = planck omega$
 
 = Semiconductor Simulation Basics
 
@@ -345,14 +359,37 @@ $ u(x) = integral G(x, y) f(y) dif y $
 gives continuous Green function with jump in derivative. $C^0$.
 jump in derivative gives dirac in 2nd derivative.
 
-== Retarded and advanced
+== Schroedinger
 
-$ G^R = (E - H - Sigma^R)^(-1) $
-$ G^A = (G^R)^dagger $
+Retarded $ G^R = (E - H - Sigma^R)^(-1) $
+Advanced $ G^A = (G^R)^dagger $
+
+Advanced is time-reversal.
 
 $ phi = G^R S $
 
 with $Sigma^R$ only two entries at the contacts.
+
+$(E - H)$ is singular for $E = E_n$. That's Helmholtz resonance.
+Fix: Add a small amount of loss. Resonance is damped. Lorentzian (width $eta$) instead of dirac delta (pole).
+$ G^R = lim_(eta -> 0^+) (E - H + i eta)^(-1) $
+Positive branch selects outgoing/retarded/causal. Analytic in upper half-plane. Pole in lower.
+Negative branch selects incoming/advanced/anti-causal. Analytic in lower half-plane. Pole in upper.
+
+
+Propagator $G^R(x,x')$. Given excitation at $x'$, what's the amplitude at $x$. Propagates disturbance. Name from time-dependent version.
+
+Correlation $G^<(x,x')$. How correlated are the occupations at $x$ and $x'$.
+
+== Analytic Derivation
+
+Away from source, we have homogeneous RHS, so free particle. So plane wave.
+Solution space is 2D with incoming and outgoing.
+We select outgoing radiation BCs. Giving us unique $A exp(i k |x - x'|)$
+Green function is $C^0$ with jump in derivative to produce dirac delta.
+Integrating over vanishingly small region around jump, gives conditions to find A.
+
+TODO: write full derivation.
 
 == From the squared wave function to the lesser function
 
@@ -364,6 +401,7 @@ $Sigma^< := S^L (S^L)^dagger f_L + S^R (S^R)^dagger f_R$, the lesser self-energy
 This is built from two vectors $S^L = (S_(1 1), 0, dots, 0)$ and $S^R = (0, dots, 0, S_(N N))$.
 $G^< := G^R Sigma^< G^A$
 
+// does this even belong in the Green's function formalism section?
 == Broadening
 
 Broadening $Gamma$ [energy] how blurred the energy level is (energy width). Comes from Energy-time uncertainty relation.
@@ -430,6 +468,13 @@ Landauer gives $I = (2 q)/h integral dif E space T(E) (f_L - f_R)$
 
 == Algorithm
 
+KALMAN FILTER
+Schur complement.
+tridiagonal structure is a Markov chain.
+forward = kalman filter
+backward = RTS smoother
+Really just smart gaussian elimination: Thomas algorithm + selected inversion (Takahashi's equations)
+
 Inverting $(E - H - Sigma^R)$ in a self-consistency loop for every $E$ and every bias is too expensive. $O(N^3)$
 
 We only need diagonal $G^R_(i,i)$ for probability and corner $G^R_(1,N)$ for transmission.
@@ -459,6 +504,106 @@ $G_(n n) = g_n + g_n H_(n, n+1) G_(n+1,n+1) H_(n+1,n) g_n$
 
 and the off-diagonal we get as
 $G_(n+1,n) = -G_(n+1,n+1) H_(n+1,n) g_n$
+
+== All equations (L6.6)
+
+What a device simulation solves, in order. One inversion, everything else a product.
+
+Contact self-energies and broadening
+$
+  Sigma^R_(1 1) = -t_L exp(i k_L Delta x),
+  quad Sigma^R_(N N) = -t_R exp(i k_R Delta x),
+  quad Gamma_c = i (Sigma^R_c - Sigma^A_c)
+$
+
+Retarded Green's function (the only expensive step)
+$ G^R = (E - H - Sigma^R)^(-1) $
+
+Density of states
+$ A = i (G^R - G^A) = G^R Gamma G^A, quad "DOS" = 1/(2 pi) A_(x x) $
+
+Injection and lesser Green's function
+$ Sigma^< = i sum_c Gamma_c f_c, quad G^< = G^R Sigma^< G^A $
+
+Charge density (and holes from the greater one)
+$
+  n(x) = -i integral (dif E)/(2 pi) G^<_(x x),
+  quad p(x) = i integral (dif E)/(2 pi) G^>_(x x)
+$
+
+Transmission and current
+$
+  T(E) = tr(Gamma_L G^R Gamma_R G^A),
+  quad I = (2 q)/h integral dif E space T(E) [f_L - f_R]
+$
+
+Poisson closes the loop with $n$. Repeat per energy and per bias.
+
+= Lattice Scattering
+
+Phonons
+Quanta of crystal lattice vibrations.
+Boson.
+Carry momentum and energy.
+Collective movement of whole crystal, not individual atoms.
+Phonons have band structure. Dispersion relation $omega(q)$.
+Energy tens of meV vs eV for electrons.
+
+Branch counting. crystal with r atoms per unit cell has 3r branches.
+3 are acoustic rest is "optical".
+Acoustic = atoms in cell move together.
+Optical: atoms move against each other, stretching bonds.
+
+Computed via valence force field model. spring constant per bond length and angle.
+fitted. like tight binding.
+
+Scattering moves electrons between energy levels.
+So current is not conserved at one energy level, only across all.
+Transmission T(E) no longer exists.
+
+by charge conservation (continuity eq) number of electrons is conserved.
+filling of states and empyting of states across all states must cancel.
+*Kadanoff–Baym condition*
+$
+  integral dif E space tr(Sigma^< G^>)
+  =
+  integral dif E space tr(G^< Sigma^>)
+$
+with
+- $Sigma^< G^>$ filling (filling-mechanism + empty state)
+- $G^< Sigma^>$ emptying (full state + emptying-mechanism)
+
+ordering doesn't matter bc trace.
+
+
+Emission factor $N_"ph" + 1$ (+1 for spontaneous emission)
+Absorption factor $N_"ph"$
+
+In-scattering (entering state E):
+$
+  Sigma^<_(i i) = D[(N_"ph" + 1) G^<_(i i) (E + E_"ph") + N_"ph" G^<_(i i) (E - E_"ph")]
+$
+
+Out-scattering (leaving state E):
+$
+  Sigma^>_(i i) = D[N_"ph" G^>_(i i) (E + E_"ph") + (N_"ph" + 1) G^>_(i i) (E - E_"ph")]
+$
+
+$D$ is electron-phonon coupling strength. material constant.
+here we assumed self-energy diagonal in position. not true in general.
+
+recursive defintion. G depends on Sigma, but our Sigma here depends on G. non-linear.
+self-consistent iteration needed.
+lesser built from lesser and greater build from greater.
+
+start from ballistic setup, with G zero. then update and iterate til currents on both ends converge.
+
+We still need to build $Sigma^R$.
+
+No closed expression.
+Take $Gamma = i(Sigma^> - Sigma^<)$, which is the imaginary part: $-i/2 Gamma$.
+The real part follows from causality (Hilbert transform, Kramers-Kronig), nonlocal in energy,
+usually dropped as too expensive. Essential for electron-electron (GW), not for phonons.
 
 = TODO
 
