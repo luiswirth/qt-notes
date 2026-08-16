@@ -5,6 +5,49 @@
 $p = planck k$
 $E = planck omega$
 
+== Operators
+
+Everything is downstream of operators. Operators, their eigenvalues and eigenfunctions. Nothing else.
+
+$hat(E) = +i planck partial_t$, $hat(p) = -i planck partial_x$, $hat(H) = hat(p)^2/(2m)$
+
+Not a new postulate. On a plane wave $psi = exp(i(k x - omega t))$ differentiating returns the number:
+$hat(E) psi = planck omega psi$ and $hat(p) psi = planck k psi$.
+So the operators are the dictionary above, read backwards and extended by linearity.
+
+An eigenvalue exists only for an eigenstate. Plane wave: definite $p$. Superposition: no definite $p$, only $lr(⟨ hat(p) ⟩)$ and a spread.
+This is why plane waves are everywhere here.
+
+Schroedinger is the classical $E = p^2/(2m)$ with hats on:
+$
+  hat(H) psi = hat(E) psi quad ==> quad -planck^2/(2m) partial_x^2 psi = i planck partial_t psi.
+$
+A postulate, not an identity: $hat(H)$ acts on $x$, $hat(E)$ on $t$. They agree on physical states. That is the dynamical law, everything else is definitions and differentiation.
+
+Born rule: $P_t (x) = |psi_t (x)|^2$. Says what $psi$ means. Every density and DoS comes from it.
+
+Hermiticity: $hat(H)^dagger = hat(H)$, giving real eigenvalues and an orthonormal eigenbasis. What makes the whole framing work.
+
+== Why time is not an operator
+
+$t$ is a parameter, not an observable. $x$ is the operator, $t$ is the label on the state.
+
+No time operator: $[hat(t), hat(H)] = i planck$ would shift the spectrum of $hat(H)$ by any real $epsilon$, so it would be unbounded below. No ground state, no stable matter. Not "negative energy is unphysical", but bottomless.
+
+So the observable of energy is $hat(H)$, and the course only ever diagonalizes $hat(H)$, never $hat(E)$.
+
+QFT fixes the asymmetry the other way, by demoting $x$: the operators become fields indexed by spacetime.
+
+== Covariant form
+
+$eta = op("diag")(-1,+1,+1,+1)$ on $(t, x_1, x_2, x_3)$, $x^mu = (t, arrow(x))$, $k_mu = (-omega, arrow(k))$.
+$
+  phi = -omega t + arrow(k) dot arrow(x) = k_mu x^mu, quad quad partial_mu <--> i k_mu, quad quad hat(p)_mu = -i planck partial_mu, quad quad p_mu = (-E, arrow(p)).
+$
+One operator, no asymmetry. The $+$ in $hat(E) = +i planck partial_t$ is only $eta^(0 0) = -1$ after raising the index.
+
+The kinematics is covariant. $E = p^2/(2m)$ is the one line that is not: it picks the Galilei group instead of Lorentz. That is the whole content of "non-relativistic".
+
 == Quantum numbers
 
 Quantum Number: The index of an eigenvalue of an operator that commutes with the Hamiltonian.
@@ -473,6 +516,8 @@ tridiagonal structure is a Markov chain.
 forward = kalman filter
 backward = RTS smoother
 Really just smart gaussian elimination: Thomas algorithm + selected inversion (Takahashi's equations)
+DMRG is the same sweep: environments cached left and right instead of partial inverses.
+All of it is dynamic programming on a chain. Two sweeps, cache from each end, combine in the middle.
 
 Inverting $(E - H - Sigma^R)$ in a self-consistency loop for every $E$ and every bias is too expensive. $O(N^3)$
 
