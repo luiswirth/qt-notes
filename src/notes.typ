@@ -401,7 +401,6 @@ $Sigma^< := S^L (S^L)^dagger f_L + S^R (S^R)^dagger f_R$, the lesser self-energy
 This is built from two vectors $S^L = (S_(1 1), 0, dots, 0)$ and $S^R = (0, dots, 0, S_(N N))$.
 $G^< := G^R Sigma^< G^A$
 
-// does this even belong in the Green's function formalism section?
 == Broadening
 
 Broadening $Gamma$ [energy] how blurred the energy level is (energy width). Comes from Energy-time uncertainty relation.
